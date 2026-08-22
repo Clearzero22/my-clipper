@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "我的收藏夹",
+  "version": "0.1.0",
+  "description": "个人网页收藏：新标签矩阵主页 + 划词收藏 + 本地存储",
+  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "action": {
+    "default_popup": "dist/popup.html",
+    "default_title": "我的收藏"
+  },
+  "chrome_url_overrides": {
+    "newtab": "dist/newtab.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "save-clip": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S"
+      },
+      "description": "收藏当前网页"
+    }
+  },
+  "options_page": "dist/options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

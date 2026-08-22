@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --c-paper: #f5f1e8;
+    --c-paper2: #ece5d6;
+    --c-ink: #1c1a17;
+    --c-inksoft: #6b6358;
+    --c-line: rgba(28, 26, 23, 0.12);
+    --c-brick: #9e2b25;
+    --c-forest: #2f5d3a;
+    --c-ink-hover: #2c2823;
+    --c-brick-soft: rgba(158, 43, 37, 0.08);
+    --c-tile-from: #ece5d6;
+    --c-tile-to: #e3dccb;
+    --c-sel: rgba(158, 43, 37, 0.18);
+  }
+
+  .dark {
+    color-scheme: dark;
+    --c-paper: #1c1a17;
+    --c-paper2: #2a2620;
+    --c-ink: #f3eee2;
+    --c-inksoft: #a89e8e;
+    --c-line: rgba(243, 238, 226, 0.12);
+    --c-brick: #d9605a;
+    --c-forest: #6fae84;
+    --c-ink-hover: #34302a;
+    --c-brick-soft: rgba(217, 96, 90, 0.12);
+    --c-tile-from: #2a2620;
+    --c-tile-to: #322d26;
+    --c-sel: rgba(217, 96, 90, 0.22);
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--c-paper);
+    color: var(--c-ink);
+    font-family: "Fraunces", "Newsreader", Georgia, "Songti SC", "STSong",
+      "Noto Serif CJK SC", serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition: background-color 240ms ease, color 240ms ease;
+  }
+  #root {
+    min-height: 100vh;
+  }
+  ::selection {
+    background: var(--c-sel);
+  }
+}
+
+@layer utilities {
+  .hairline {
+    border-color: var(--c-line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
