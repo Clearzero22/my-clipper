@@ -1,10 +1,12 @@
+import type { Clip } from "../shared/types";
+
 export function ClipGrid({
   clips,
   onOpen,
   onDelete,
 }: {
-  clips: { id: string; url: string; title: string; favicon: string; selectionText?: string }[];
-  onOpen: (url: string) => void;
+  clips: Clip[];
+  onOpen: (clip: Clip) => void;
   onDelete: (id: string) => void;
 }) {
   if (clips.length === 0) {
@@ -25,7 +27,7 @@ export function ClipGrid({
           key={c.id}
           className="group flex animate-rise flex-col gap-2 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brick"
           style={{ animationDelay: `${Math.min(i, 12) * 28}ms` }}
-          onClick={() => onOpen(c.url)}
+          onClick={() => onOpen(c)}
           onContextMenu={(e) => {
             e.preventDefault();
             onDelete(c.id);

@@ -3,7 +3,7 @@
   "name": "我的收藏夹",
   "version": "0.1.0",
   "description": "个人网页收藏：新标签矩阵主页 + 划词收藏 + 本地存储",
-  "permissions": ["storage", "activeTab", "scripting", "tabs"],
+  "permissions": ["storage", "activeTab", "scripting", "tabs", "notifications"],
   "action": {
     "default_popup": "dist/popup.html",
     "default_title": "我的收藏"

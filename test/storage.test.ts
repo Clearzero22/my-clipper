@@ -72,4 +72,21 @@ describe("ClipStore (memory backend)", () => {
     await store.save({ url: "https://a.com", title: "A" });
     expect(called).toBe(1);
   });
+
+  it("touch bumps visitCount and lastVisited", async () => {
+    const store = new ClipStore([]);
+    const saved = await store.save({ url: "https://a.com", title: "A" });
+    expect(saved.visitCount).toBeUndefined();
+    await store.touch(saved.id);
+    await store.touch(saved.id);
+    const c = (await store.list())[0];
+    expect(c.visitCount).toBe(2);
+    expect(typeof c.lastVisited).toBe("number");
+  });
+
+  it("touch on unknown id is a no-op", async () => {
+    const store = new ClipStore([]);
+    await store.touch("nope");
+    expect(await store.list()).toHaveLength(0);
+  });
 });

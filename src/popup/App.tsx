@@ -5,14 +5,27 @@ import { ThemeToggle } from "../components/ui/ThemeToggle";
 import { useClips } from "../shared/hooks";
 import { searchClips } from "../shared/fuse";
 import { clipStore } from "../shared/storage";
+import { type Clip } from "../shared/types";
 import "../index.css";
 
 export default function PopupApp() {
   const { clips } = useClips();
   const [query, setQuery] = useState("");
+  const [saved, setSaved] = useState(false);
   const filtered = useMemo(() => searchClips(clips, query), [clips, query]);
 
-  const saveCurrent = () => chrome.runtime.sendMessage({ type: "SAVE_ACTIVE_TAB" });
+  const saveCurrent = () => {
+    setSaved(true);
+    chrome.runtime.sendMessage({ type: "SAVE_ACTIVE_TAB" }, () => {
+      setTimeout(() => setSaved(false), 1500);
+    });
+  };
+
+  const openClip = (clip: Clip) => {
+    clipStore.touch(clip.id);
+    chrome.tabs.update({ url: clip.url });
+    window.close();
+  };
 
   return (
     <div className="w-[340px] bg-paper text-ink">
@@ -24,7 +37,7 @@ export default function PopupApp() {
             onClick={saveCurrent}
             className="rounded-md bg-ink px-3 py-1.5 text-xs font-medium text-paper transition-all active:scale-95 hover:bg-inkHover"
           >
-            + 收藏此页
+            {saved ? "已收藏 ✓" : "+ 收藏此页"}
           </button>
         </div>
       </header>
@@ -39,7 +52,7 @@ export default function PopupApp() {
             <Glyph src={c.favicon} alt={c.title} className="h-8 w-8 shrink-0" />
             <button
               className="min-w-0 flex-1 text-left"
-              onClick={() => chrome.tabs.update({ url: c.url })}
+              onClick={() => openClip(c)}
             >
               <div className="truncate font-serif text-sm text-ink">{c.title}</div>
               <div className="truncate text-[11px] text-inksoft">

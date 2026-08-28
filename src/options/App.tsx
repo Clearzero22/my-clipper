@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Button } from "../components/ui/basic";
 import { useClips } from "../shared/hooks";
 import { clipStore } from "../shared/storage";
+import { isClip } from "../shared/types";
 import "../index.css";
 
 export default function OptionsApp() {
   const { clips } = useClips();
+  const [importMsg, setImportMsg] = useState<string | null>(null);
 
   const exportJson = async () => {
     const data = await clipStore.list();
@@ -16,9 +19,27 @@ export default function OptionsApp() {
   };
 
   const importJson = async (file: File) => {
-    const text = await file.text();
-    const data = JSON.parse(text);
-    if (Array.isArray(data)) await clipStore.importClips(data);
+    setImportMsg(null);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!Array.isArray(data)) {
+        setImportMsg("导入失败：文件内容不是数组。");
+        return;
+      }
+      const valid = data.filter(isClip);
+      const invalid = data.length - valid.length;
+      if (valid.length === 0) {
+        setImportMsg("导入失败：没有合法的藏书条目。");
+        return;
+      }
+      await clipStore.importClips(valid);
+      setImportMsg(
+        invalid > 0 ? `已导入 ${valid.length} 条，跳过 ${invalid} 条非法数据。` : `已导入 ${valid.length} 条。`
+      );
+    } catch (e) {
+      setImportMsg(`导入失败：${e instanceof Error ? e.message : String(e)}`);
+    }
   };
 
   const clearAll = async () => {
@@ -48,6 +69,9 @@ export default function OptionsApp() {
             />
           </label>
         </div>
+        {importMsg && (
+          <p className="rounded-md border border-line bg-paper2 px-4 py-2 text-sm text-inksoft">{importMsg}</p>
+        )}
 
         <div className="flex items-center justify-between rounded-md border border-line bg-paper2 px-4 py-3">
           <span className="font-serif text-brick">清空全部</span>

@@ -69,6 +69,19 @@ export class ClipStore {
     this.emit(next);
   }
 
+  async touch(id: string): Promise<void> {
+    const clips = await this.list();
+    const i = clips.findIndex((c) => c.id === id);
+    if (i < 0) return;
+    clips[i] = {
+      ...clips[i],
+      lastVisited: Date.now(),
+      visitCount: (clips[i].visitCount ?? 0) + 1,
+    };
+    await this.write(clips);
+    this.emit(clips);
+  }
+
   async update(id: string, patch: Partial<Clip>): Promise<void> {
     const clips = await this.list();
     const next = clips.map((c) => (c.id === id ? { ...c, ...patch, tags: patch.tags ?? c.tags } : c));
@@ -100,7 +113,24 @@ export class ClipStore {
       this.memory = clips;
       return;
     }
-    await chrome.storage.local.set({ [CLIPS_KEY]: clips });
+    try {
+      await chrome.storage.local.set({ [CLIPS_KEY]: clips });
+      if (chrome.runtime?.lastError) {
+        throw new Error(chrome.runtime.lastError.message);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // 配额满或写入失败：通知用户并重新抛出，由调用方决定是否提示
+      if (typeof chrome !== "undefined" && chrome.notifications) {
+        chrome.notifications.create("clip-error", {
+          type: "basic",
+          iconUrl: "icons/icon48.png",
+          title: "保存失败",
+          message: msg.includes("QUOTA") ? "存储空间已满，请导出备份后清理部分藏书。" : `写入失败：${msg}`,
+        });
+      }
+      throw e;
+    }
   }
 
   private emit(clips: Clip[]): void {

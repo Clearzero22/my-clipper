@@ -7,6 +7,8 @@ export interface Clip {
   note?: string;
   tags: string[];
   createdAt: number;
+  lastVisited?: number;
+  visitCount?: number;
 }
 
 export const CLIPS_KEY = "clips";
@@ -37,4 +39,20 @@ export function faviconFor(url: string): string {
 
 export function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function isClip(v: unknown): v is Clip {
+  if (!v || typeof v !== "object") return false;
+  const o = v as Record<string, unknown>;
+  if (typeof o.id !== "string" || !o.id) return false;
+  if (typeof o.url !== "string" || !o.url) return false;
+  if (typeof o.title !== "string") return false;
+  if (typeof o.favicon !== "string") return false;
+  if (!Array.isArray(o.tags) || !o.tags.every((t) => typeof t === "string")) return false;
+  if (typeof o.createdAt !== "number" || !Number.isFinite(o.createdAt)) return false;
+  if (o.lastVisited !== undefined && typeof o.lastVisited !== "number") return false;
+  if (o.visitCount !== undefined && typeof o.visitCount !== "number") return false;
+  if (o.selectionText !== undefined && typeof o.selectionText !== "string") return false;
+  if (o.note !== undefined && typeof o.note !== "string") return false;
+  return true;
 }

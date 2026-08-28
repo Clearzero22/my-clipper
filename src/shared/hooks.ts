@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { clipStore } from "../shared/storage";
-import type { Clip } from "../shared/types";
+import { CLIPS_KEY, type Clip } from "../shared/types";
 
 export function useClips(): { clips: Clip[]; reload: () => Promise<void> } {
   const [clips, setClips] = useState<Clip[]>([]);
@@ -9,7 +9,23 @@ export function useClips(): { clips: Clip[]; reload: () => Promise<void> } {
   useEffect(() => {
     reload();
     const off = clipStore.onChange(setClips);
-    return off;
+
+    const onChanged = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string
+    ) => {
+      if (area === "local" && changes[CLIPS_KEY]) reload();
+    };
+    if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
+      chrome.storage.onChanged.addListener(onChanged);
+    }
+
+    return () => {
+      off();
+      if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
+        chrome.storage.onChanged.removeListener(onChanged);
+      }
+    };
   }, []);
 
   return { clips, reload };
