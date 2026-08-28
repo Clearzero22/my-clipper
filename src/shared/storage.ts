@@ -33,7 +33,6 @@ export class ClipStore {
     const existing = clips.find((c) => c.url === clip.url);
     let result: Clip;
     if (existing) {
-      // 去重：更新标签/笔记/标题，保留原 id 与 createdAt
       result = {
         ...existing,
         title: clip.title || existing.title,
@@ -89,13 +88,25 @@ export class ClipStore {
     this.emit(next);
   }
 
-  async importClips(incoming: Clip[]): Promise<void> {
+  async importClips(incoming: Clip[], mode: "merge" | "overwrite" = "merge"): Promise<{ added: number; updated: number }> {
+    if (mode === "overwrite") {
+      await this.write(incoming);
+      this.emit(incoming);
+      return { added: incoming.length, updated: 0 };
+    }
     const clips = await this.list();
     const byId = new Map(clips.map((c) => [c.id, c]));
-    for (const c of incoming) byId.set(c.id, c);
+    let added = 0;
+    let updated = 0;
+    for (const c of incoming) {
+      if (byId.has(c.id)) updated++;
+      else added++;
+      byId.set(c.id, c);
+    }
     const next = [...byId.values()];
     await this.write(next);
     this.emit(next);
+    return { added, updated };
   }
 
   async clear(): Promise<void> {
@@ -120,7 +131,6 @@ export class ClipStore {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      // 配额满或写入失败：通知用户并重新抛出，由调用方决定是否提示
       if (typeof chrome !== "undefined" && chrome.notifications) {
         chrome.notifications.create("clip-error", {
           type: "basic",
