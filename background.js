@@ -15,8 +15,23 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-// 从 content script 抓取选中文字与页面元数据
+async function ensureContentScript(tabId) {
+  try {
+    await chrome.tabs.sendMessage(tabId, { type: "PING" });
+    return true;
+  } catch (_) {
+    try {
+      await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+}
+
 async function getPageCapture(tabId) {
+  const ready = await ensureContentScript(tabId);
+  if (!ready) return {};
   try {
     const r = await chrome.tabs.sendMessage(tabId, { type: "GET_CAPTURE" });
     return r || {};
@@ -25,7 +40,6 @@ async function getPageCapture(tabId) {
   }
 }
 
-// 保存当前活动标签为收藏（去重规则与 ClipStore.save 对齐）
 async function saveActiveTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.url || !tab.url.startsWith("http")) return;
@@ -85,12 +99,10 @@ async function saveActiveTab() {
   }
 }
 
-// 命令：Ctrl+Shift+S
 chrome.commands.onCommand.addListener((cmd) => {
   if (cmd === "save-clip") saveActiveTab();
 });
 
-// 来自 popup / newtab / options 的消息
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg && msg.type === "SAVE_ACTIVE_TAB") {
     saveActiveTab().then(() => sendResponse({ ok: true }));

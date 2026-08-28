@@ -90,3 +90,32 @@ export function useTheme(): { theme: Theme; toggle: () => void } {
 
   return { theme, toggle };
 }
+
+export type SortKey = "recent" | "frequent" | "new";
+const SORT_KEY = "sortPreference";
+
+export function useSortPreference(defaultKey: SortKey = "recent"): [SortKey, (k: SortKey) => void] {
+  const [sort, setSort] = useState<SortKey>(defaultKey);
+
+  useEffect(() => {
+    if (typeof chrome === "undefined" || !chrome.storage) return;
+    chrome.storage.local.get(SORT_KEY, (res) => {
+      if (res[SORT_KEY]) setSort(res[SORT_KEY] as SortKey);
+    });
+    const onChanged = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+      if (area === "local" && changes[SORT_KEY]) {
+        setSort((changes[SORT_KEY].newValue ?? defaultKey) as SortKey);
+      }
+    };
+    chrome.storage.onChanged.addListener(onChanged);
+    return () => chrome.storage.onChanged.removeListener(onChanged);
+  }, [defaultKey]);
+
+  const set = (k: SortKey) => {
+    setSort(k);
+    if (typeof chrome !== "undefined" && chrome.storage) {
+      chrome.storage.local.set({ [SORT_KEY]: k });
+    }
+  };
+  return [sort, set];
+}

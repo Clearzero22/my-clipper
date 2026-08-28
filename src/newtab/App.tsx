@@ -3,14 +3,13 @@ import { cn } from "../lib/utils";
 import { Button, Input } from "../components/ui/basic";
 import { Badge, Dialog } from "../components/ui/widgets";
 import { ThemeToggle } from "../components/ui/ThemeToggle";
+import { TagAutocomplete } from "../components/ui/TagAutocomplete";
 import { ClipGrid } from "./ClipGrid";
-import { useClips } from "../shared/hooks";
+import { useClips, useSortPreference } from "../shared/hooks";
 import { searchClips } from "../shared/fuse";
 import { clipStore } from "../shared/storage";
 import { faviconFor, normalizeUrl, isUrlLike, type Clip } from "../shared/types";
 import "../index.css";
-
-type SortKey = "recent" | "frequent" | "new";
 
 export default function NewTabApp() {
   const { clips } = useClips();
@@ -20,7 +19,7 @@ export default function NewTabApp() {
   const [title, setTitle] = useState("");
   const [tags, setTags] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [sort, setSort] = useState<SortKey>("recent");
+  const [sort, setSort] = useSortPreference("recent");
 
   const filtered = useMemo(() => searchClips(clips, query), [clips, query]);
   const tagSet = useMemo(() => [...new Set(clips.flatMap((c) => c.tags))], [clips]);
@@ -69,7 +68,7 @@ export default function NewTabApp() {
               共 {clips.length} 枚书签
               {activeTag && <span className="text-brick"> · {activeTag}</span>}
             </p>
-            <div className="mt-3 flex gap-1">
+            <div className="mt-3 flex gap-1" role="group" aria-label="排序方式">
               {(
                 [
                   ["recent", "最近"],
@@ -80,11 +79,10 @@ export default function NewTabApp() {
                 <button
                   key={k}
                   onClick={() => setSort(k)}
+                  aria-pressed={sort === k}
                   className={cn(
-                    "rounded-md px-2.5 py-1 text-xs transition-colors",
-                    sort === k
-                      ? "bg-ink text-paper"
-                      : "text-inksoft hover:bg-paper2"
+                    "rounded-md px-2.5 py-1 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brick",
+                    sort === k ? "bg-ink text-paper" : "text-inksoft hover:bg-paper2"
                   )}
                 >
                   {label}
@@ -105,6 +103,7 @@ export default function NewTabApp() {
                 )
                   open(normalizeUrl(query));
               }}
+              aria-label="搜索收藏"
             />
             <ThemeToggle />
             <Button onClick={() => setAddOpen(true)}>+ 添加</Button>
@@ -112,11 +111,8 @@ export default function NewTabApp() {
         </header>
 
         {tagSet.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Badge
-              tone={activeTag === null ? "brick" : "ink"}
-              onClick={() => setActiveTag(null)}
-            >
+          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="标签筛选">
+            <Badge tone={activeTag === null ? "brick" : "ink"} onClick={() => setActiveTag(null)}>
               全部
             </Badge>
             {tagSet.map((t) => (
@@ -154,7 +150,7 @@ export default function NewTabApp() {
           </div>
           <div>
             <label className="mb-1 block text-xs uppercase tracking-wider text-inksoft">标签</label>
-            <Input placeholder="逗号分隔" value={tags} onChange={(e) => setTags(e.target.value)} />
+            <TagAutocomplete value={tags} onChange={setTags} allTags={tagSet} placeholder="逗号分隔，支持自动补全" />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" onClick={() => setAddOpen(false)}>
