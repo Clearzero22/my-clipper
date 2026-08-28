@@ -3,6 +3,7 @@ import { Input } from "../components/ui/basic";
 import { Glyph } from "../components/ui/widgets";
 import { ThemeToggle } from "../components/ui/ThemeToggle";
 import { useClips } from "../shared/hooks";
+import { useDebounce } from "../shared/useDebounce";
 import { searchClips } from "../shared/fuse";
 import { clipStore } from "../shared/storage";
 import { type Clip } from "../shared/types";
@@ -11,14 +12,15 @@ import "../index.css";
 export default function PopupApp() {
   const { clips } = useClips();
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 150);
   const [saved, setSaved] = useState(false);
   const [focusedIdx, setFocusedIdx] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
-  const filtered = useMemo(() => searchClips(clips, query), [clips, query]);
+  const filtered = useMemo(() => searchClips(clips, debouncedQuery), [clips, debouncedQuery]);
 
   useEffect(() => {
     setFocusedIdx(0);
-  }, [query]);
+  }, [debouncedQuery]);
 
   const saveCurrent = () => {
     setSaved(true);

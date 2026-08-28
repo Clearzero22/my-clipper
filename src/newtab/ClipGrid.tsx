@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { Clip } from "../shared/types";
 import { Dialog } from "../components/ui/widgets";
 import { Button as UIButton } from "../components/ui/basic";
+
+const PAGE_SIZE = 50;
 
 export function ClipGrid({
   clips,
@@ -14,6 +16,34 @@ export function ClipGrid({
 }) {
   const [pending, setPending] = useState<Clip | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Reset pagination when filter/sort changes (clips identity changes)
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [clips]);
+
+  const visible = clips.slice(0, visibleCount);
+  const hasMore = visibleCount < clips.length;
+
+  const loadMore = useCallback(() => {
+    setVisibleCount((c) => Math.min(c + PAGE_SIZE, clips.length));
+  }, [clips.length]);
+
+  useEffect(() => {
+    if (!hasMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: "400px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, loadMore, visibleCount]);
 
   const handleDeleteConfirm = () => {
     if (pending) {
@@ -40,7 +70,7 @@ export function ClipGrid({
         role="grid"
         aria-label="收藏网格"
       >
-        {clips.map((c, i) => (
+        {visible.map((c, i) => (
           <button
             key={c.id}
             role="gridcell"
@@ -87,6 +117,14 @@ export function ClipGrid({
           </button>
         ))}
       </div>
+
+      {hasMore && (
+        <div ref={sentinelRef} className="flex justify-center py-6">
+          <UIButton variant="ghost" onClick={loadMore} className="text-xs text-inksoft">
+            加载更多（{visible.length}/{clips.length}）
+          </UIButton>
+        </div>
+      )}
 
       <Dialog open={!!pending} onClose={() => setPending(null)}>
         <h2 className="font-serif text-lg font-semibold text-ink">确认删除？</h2>

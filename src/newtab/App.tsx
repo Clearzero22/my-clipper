@@ -6,6 +6,7 @@ import { ThemeToggle } from "../components/ui/ThemeToggle";
 import { TagAutocomplete } from "../components/ui/TagAutocomplete";
 import { ClipGrid } from "./ClipGrid";
 import { useClips, useSortPreference } from "../shared/hooks";
+import { useDebounce } from "../shared/useDebounce";
 import { searchClips } from "../shared/fuse";
 import { clipStore } from "../shared/storage";
 import { faviconFor, normalizeUrl, isUrlLike, type Clip } from "../shared/types";
@@ -14,6 +15,7 @@ import "../index.css";
 export default function NewTabApp() {
   const { clips } = useClips();
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 150);
   const [addOpen, setAddOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -21,7 +23,7 @@ export default function NewTabApp() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [sort, setSort] = useSortPreference("recent");
 
-  const filtered = useMemo(() => searchClips(clips, query), [clips, query]);
+  const filtered = useMemo(() => searchClips(clips, debouncedQuery), [clips, debouncedQuery]);
   const tagSet = useMemo(() => [...new Set(clips.flatMap((c) => c.tags))], [clips]);
   const shown = useMemo(() => {
     const base = activeTag ? filtered.filter((c) => c.tags.includes(activeTag)) : filtered;
