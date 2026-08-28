@@ -10,6 +10,7 @@ import { useDebounce } from "../shared/useDebounce";
 import { searchClips } from "../shared/fuse";
 import { clipStore } from "../shared/storage";
 import { faviconFor, normalizeUrl, isUrlLike, type Clip } from "../shared/types";
+import { buildExportPayload, exportFileName, downloadJson, copyToClipboard } from "../shared/importExport";
 import "../index.css";
 
 export default function NewTabApp() {
@@ -22,6 +23,7 @@ export default function NewTabApp() {
   const [tags, setTags] = useState("");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [sort, setSort] = useSortPreference("recent");
+  const [exportCopied, setExportCopied] = useState(false);
 
   const filtered = useMemo(() => searchClips(clips, debouncedQuery), [clips, debouncedQuery]);
   const tagSet = useMemo(() => [...new Set(clips.flatMap((c) => c.tags))], [clips]);
@@ -42,6 +44,23 @@ export default function NewTabApp() {
   };
 
   const open = (u: string) => chrome.tabs.update({ url: u });
+
+  const openOptions = () => {
+    if (typeof chrome !== "undefined" && chrome.runtime?.openOptionsPage) chrome.runtime.openOptionsPage();
+    else window.open(chrome.runtime.getURL("dist/options.html"), "_blank");
+  };
+
+  const handleExportFile = async () => {
+    const data = await clipStore.list();
+    downloadJson(exportFileName(), buildExportPayload(data));
+  };
+
+  const handleCopyExport = async () => {
+    const data = await clipStore.list();
+    await copyToClipboard(JSON.stringify(buildExportPayload(data), null, 2));
+    setExportCopied(true);
+    setTimeout(() => setExportCopied(false), 1500);
+  };
 
   const submitAdd = async () => {
     if (!url.trim()) return;
@@ -135,8 +154,35 @@ export default function NewTabApp() {
       </div>
 
       <footer className="border-t border-line py-5 text-center text-xs text-inksoft">
-        藏书 · 收藏存于本地浏览器　·　按{" "}
-        <span className="font-serif text-ink">Ctrl + Shift + S</span> 收藏当前页　·　右键瓷砖可删除
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          <span>
+            藏书 · 收藏存于本地浏览器 · 按{" "}
+            <span className="font-serif text-ink">Ctrl + Shift + S</span> 收藏当前页 · 右键瓷砖可删除
+          </span>
+          <span className="hidden sm:inline text-line">|</span>
+          <span className="flex items-center gap-2">
+            <button
+              onClick={openOptions}
+              className="underline decoration-line underline-offset-4 hover:text-ink hover:decoration-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brick rounded px-1"
+            >
+              设置
+            </button>
+            <span className="text-line">·</span>
+            <button
+              onClick={handleExportFile}
+              className="underline decoration-line underline-offset-4 hover:text-ink hover:decoration-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brick rounded px-1"
+            >
+              导出 .json
+            </button>
+            <span className="text-line">·</span>
+            <button
+              onClick={handleCopyExport}
+              className="underline decoration-line underline-offset-4 hover:text-ink hover:decoration-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brick rounded px-1"
+            >
+              {exportCopied ? "已复制 ✓" : "复制 JSON"}
+            </button>
+          </span>
+        </div>
       </footer>
 
       <Dialog open={addOpen} onClose={() => setAddOpen(false)}>
